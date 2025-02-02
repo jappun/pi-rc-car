@@ -5,13 +5,24 @@ from pyPS4Controller.controller import Controller
 ## STEP 1: tell our computer what motors are connected to which pins
 GPIO.setmode(GPIO.BCM) # or is it supposed to be GPIO.BOARD?
 
-## TODO: CHANGE THIS FILE TO USE PWM FOR THE OLDER GRADES.
 GPIO.setup(4, GPIO.OUT) # left motor 
 GPIO.setup(5, GPIO.OUT) # right motor 
 GPIO.setup(22, GPIO.OUT) # back wheels go forward
 GPIO.setup(23, GPIO.OUT) # back wheels go backward
 
+# older students will learn about PWM for forward/back.
+# as a challenge they can implement it for turning too
+
+forward_speed = GPIO.PWM(22, 100) # sending all possible power to the motor when we go forward
+backward_speed = GPIO.PWM(23, 100) # sending half the power to the motor when we got forward
+# start both at 0
+forward_speed.start(0)
+backward_speed.start(0)
+
 class MyController(Controller):
+
+    # STEP 2: make a digital version of our controller
+    # this part prob do a high level walk thru of constructor
 
     # here, think of "self" as the physical PS4 controller,
     def __init__(self, back_wheels, left, right):
@@ -22,23 +33,24 @@ class MyController(Controller):
         self.right = right
         Controller.__init__(self)
 
+    # STEP 3: add actions to buttons
+
     # what do you think this code does?
-    def on_x_press(self):
-       GPIO.output(self.backwards, False)
-       GPIO.output(self.forwards, True)
+    def on_R3_up(self, value):
+       speed = abs(value) / 32767 * 100 # normalization i got from claude bc i wasn't sure what the ps4 joystick maps to can we check
+       backward_speed.ChangeDutyCycle(0)
+       forward_speed.ChangeDutyCycle(speed)
     
     # stop the car. which motor should you turn off?
-    def on_x_release(self):
-        GPIO.output(self.forwards, False)
+    def on_R3_y_at_rest(self):
+        backward_speed.ChangeDutyCycle(0)
+        forward_speed.ChangeDutyCycle(0)
 
     # move backwards in a straight line. which motor should we turn on?
-    def on_square_press(self):
-        GPIO.output(self.forwards, False)
-        GPIO.output(self.backwards, True)
-
-    # what do you think this code does?
-    def on_square_release(self):
-        GPIO.output(self.backwards, False)
+    def on_R3_down(self, value):
+       speed = abs(value) / 32767 * 100 # normalization i got from claude bc i wasn't sure what the ps4 joystick maps to can we check
+       forward_speed.ChangeDutyCycle(0)
+       backward_speed.ChangeDutyCycle(speed)
 
     # spin the right wheel to turn left
     def on_left_arrow_press(self):
@@ -57,4 +69,7 @@ class MyController(Controller):
         GPIO.output(self.left, False)
 
 controller = MyController((22,23), 4, 5, interface="/dev/input/js0", connecting_using_ds4drv=False)
-controller.listen()
+try:
+    controller.listen()
+finally: 
+    GPIO.cleanup()
