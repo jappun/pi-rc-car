@@ -65,13 +65,13 @@ class MyController(Controller):
 
     ## TODO: what do you think this code does?
     def on_L2_release(self):
-        GPIO.output(self.backwards, False)
-
-    ## TODO: pin the right wheel to turn left
-    def on_left_arrow_press(self):
         # Start code here
 
         return # remove when done writing
+
+    ## Spin the right wheel to turn left
+    def on_left_arrow_press(self):
+        GPIO.output(self.left, True)
 
     ## TODO: stop turning right or left 
     def on_left_right_arrow_release(self):
